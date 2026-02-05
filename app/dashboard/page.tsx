@@ -369,84 +369,87 @@ export default function DashboardPage() {
                 </Card>
               ) : (
                 interviews.map((interview, index) => (
-                  <Card
-                    key={interview.id}
-                    className="dashboard-interview-card border-border/50 backdrop-blur-sm bg-card/50 dashboard-fade-in-right"
-                    style={{ animationDelay: `${700 + index * 100}ms` }}
-                    onClick={() => {
-                      if (interview.status === 'completed') {
-                        router.push(`/interview/${interview.id}/results`);
-                      } else if (interview.status === 'pending') {
-                        router.push(`/interview/${interview.id}/session`);
-                      }
-                    }}
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-white dashboard-title-hover">
-                            {interview.jobRole}
-                          </CardTitle>
-                          <CardDescription>{interview.company}</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {interview.status === 'completed' && interview.score && (
-                            <div className={`px-3 py-1 rounded-full text-sm font-medium dashboard-badge-pulse ${
-                              interview.score >= 80 ? 'bg-green-500/20 text-green-500' :
-                              interview.score >= 60 ? 'bg-blue-500/20 text-blue-500' :
-                              'bg-orange-500/20 text-orange-500'
-                            }`}>
-                              {interview.score}%
-                            </div>
-                          )}
-                          <div className={`px-3 py-1 rounded-full text-sm font-medium dashboard-status-badge ${
-                            interview.status === 'completed'
-                              ? 'bg-green-500/20 text-green-500'
-                              : interview.status === 'in-progress'
-                              ? 'bg-blue-500/20 text-blue-500'
-                              : 'bg-yellow-500/20 text-yellow-500'
-                          }`}>
-                            {interview.status === 'completed' ? '✓ Completed' :
-                             interview.status === 'in-progress' ? '⏸ In Progress' :
-                             '⏳ Pending'}
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <div className="flex gap-4 text-sm text-muted-foreground">
-                          <span className="capitalize">{interview.interviewType} Interview</span>
-                          <span>•</span>
-                          <span className="capitalize">{interview.difficulty} Level</span>
-                          <span>•</span>
-                          <span>{interview.questions.length} Questions</span>
-                        </div>
-                        <div className="flex gap-2">
-                          {interview.status === 'pending' && (
-                            <Link href={`/interview/${interview.id}/session`} onClick={(e) => e.stopPropagation()}>
-                              <Button className="dashboard-button-glow">Start Interview</Button>
-                            </Link>
-                          )}
-                          {interview.status === 'completed' && (
-                            <Link href={`/interview/${interview.id}/results`} onClick={(e) => e.stopPropagation()}>
-                              <Button variant="outline" className="dashboard-button-outline-glow">View Results</Button>
-                            </Link>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => handleDelete(e, interview.id)}
-                            disabled={deletingId === interview.id}
-                            className="hover:bg-red-500/20 hover:text-red-500 transition-colors"
-                            title="Delete interview"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+<Card
+  key={interview.id}
+  className="dashboard-interview-card border-border/50 backdrop-blur-sm bg-card/50 dashboard-fade-in-right cursor-pointer"
+  style={{ animationDelay: `${700 + index * 100}ms` }}
+  onClick={() => {
+    if (interview.status === 'completed') {
+      router.push(`/interview/${interview.id}/results`);
+    } else {
+      // For both 'pending' and 'in-progress', go to session
+      router.push(`/interview/${interview.id}/session`);
+    }
+  }}
+>
+  <CardHeader>
+    <div className="flex items-start justify-between">
+      <div>
+        <CardTitle className="text-white dashboard-title-hover">
+          {interview.jobRole}
+        </CardTitle>
+        <CardDescription>{interview.company}</CardDescription>
+      </div>
+      <div className="flex items-center gap-2">
+        {interview.status === 'completed' && interview.score && (
+          <div className={`px-3 py-1 rounded-full text-sm font-medium dashboard-badge-pulse ${
+            interview.score >= 80 ? 'bg-green-500/20 text-green-500' :
+            interview.score >= 60 ? 'bg-blue-500/20 text-blue-500' :
+            'bg-orange-500/20 text-orange-500'
+          }`}>
+            {interview.score}%
+          </div>
+        )}
+        <div className={`px-3 py-1 rounded-full text-sm font-medium dashboard-status-badge ${
+          interview.status === 'completed'
+            ? 'bg-green-500/20 text-green-500'
+            : interview.status === 'in-progress'
+            ? 'bg-blue-500/20 text-blue-500'
+            : 'bg-yellow-500/20 text-yellow-500'
+        }`}>
+          {interview.status === 'completed' ? '✓ Completed' :
+           interview.status === 'in-progress' ? '⏸ In Progress' :
+           '⏳ Pending'}
+        </div>
+      </div>
+    </div>
+  </CardHeader>
+  <CardContent>
+    <div className="flex items-center justify-between">
+      <div className="flex gap-4 text-sm text-muted-foreground">
+        <span className="capitalize">{interview.interviewType} Interview</span>
+        <span>•</span>
+        <span className="capitalize">{interview.difficulty} Level</span>
+        <span>•</span>
+        <span>{interview.questions.length} Questions</span>
+      </div>
+      <div className="flex gap-2">
+        {(interview.status === 'pending' || interview.status === 'in-progress') && (
+          <Link href={`/interview/${interview.id}/session`} onClick={(e) => e.stopPropagation()}>
+            <Button className="dashboard-button-glow">
+              {interview.status === 'in-progress' ? 'Continue' : 'Start Interview'}
+            </Button>
+          </Link>
+        )}
+        {interview.status === 'completed' && (
+          <Link href={`/interview/${interview.id}/results`} onClick={(e) => e.stopPropagation()}>
+            <Button variant="outline" className="dashboard-button-outline-glow">View Results</Button>
+          </Link>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => handleDelete(e, interview.id)}
+          disabled={deletingId === interview.id}
+          className="hover:bg-red-500/20 hover:text-red-500 transition-colors"
+          title="Delete interview"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  </CardContent>
+</Card>
                 ))
               )}
             </div>
