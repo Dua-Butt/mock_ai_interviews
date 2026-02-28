@@ -17,7 +17,6 @@ export const getVapiClient = () => {
   return vapiInstance;
 };
 
-// Interview assistant configuration
 export interface InterviewAssistantConfig {
   jobRole: string;
   company?: string;
@@ -25,9 +24,24 @@ export interface InterviewAssistantConfig {
   difficulty: 'easy' | 'medium' | 'hard';
   currentQuestion: string;
   questionCategory: string;
+  questions?: { question: string; category: string }[];
+  questionCount?: number;
 }
 
 export const createInterviewAssistant = (config: InterviewAssistantConfig) => {
+  // Use numberOfQuestions from config — exactly what user set on create page
+  const totalQuestions = config.questionCount || config.questions?.length || 3;
+
+  // Build numbered question list for the prompt
+  const questionsList = config.questions && config.questions.length > 0
+    ? config.questions
+        .slice(0, totalQuestions) // only use exactly totalQuestions
+        .map((q, i) => `Question ${i + 1} of ${totalQuestions}: ${q.question}`)
+        .join('\n')
+    : `Question 1 of ${totalQuestions}: ${config.currentQuestion}`;
+
+  const firstQuestion = config.questions?.[0]?.question || config.currentQuestion;
+
   return {
     name: `AI Interview - ${config.jobRole}`,
     transcriber: {
@@ -46,56 +60,44 @@ export const createInterviewAssistant = (config: InterviewAssistantConfig) => {
       messages: [
         {
           role: 'system' as const,
-          content: `You are an experienced and professional interviewer conducting a ${config.interviewType} interview for the position of ${config.jobRole}${config.company ? ` at ${config.company}` : ''}.
+          content: `You are a professional interviewer conducting a ${config.difficulty} level ${config.interviewType} interview for the ${config.jobRole} position${config.company ? ` at ${config.company}` : ''}.
 
-Interview Details:
-- Difficulty Level: ${config.difficulty}
-- Question Category: ${config.questionCategory}
-- Current Question: ${config.currentQuestion}
+THIS INTERVIEW HAS EXACTLY ${totalQuestions} QUESTIONS.
 
-Your Responsibilities:
-1. Present the interview question clearly and professionally
-2. Listen actively to the candidate's response
-3. Ask 2-3 relevant follow-up questions to assess deeper understanding
-4. Provide subtle hints if the candidate struggles (without giving away the answer)
-5. Maintain a natural, encouraging conversation flow
-6. After fully exploring the topic, thank them for their answer
+STRICT RULES — follow without exception:
+1. Ask EXACTLY ${totalQuestions} questions — not more, not fewer.
+2. Use ONLY the questions listed below, in exact order.
+3. Before each question, say "Question [number] of ${totalQuestions}:" so the candidate knows their progress.
+4. Ask ONE question at a time. Wait for the candidate's complete answer.
+5. After each answer, give a brief 1-sentence acknowledgment, then move to the next question.
+6. Do NOT ask follow-up questions. Do NOT improvise new questions.
+7. After the candidate answers Question ${totalQuestions}, say:
+   "That was Question ${totalQuestions} of ${totalQuestions} — you've completed all the questions! Feel free to say goodbye when you're ready."
+8. Do NOT end the call yourself — always wait for the candidate to say goodbye.
+9. Be patient — silence for up to 30 seconds is okay.
 
-Behavioral Guidelines:
-- Professional yet warm and approachable
-- Patient - allow thinking time without pressure
-- For technical questions: Probe for conceptual understanding, not just rote memorization
-- For behavioral questions: Guide using STAR method (Situation, Task, Action, Result)
-- Provide constructive, balanced feedback
-- Keep your responses concise (30-50 words typically)
-- Use natural speech patterns suitable for voice conversation
+YOUR ${totalQuestions} QUESTIONS:
+${questionsList}
 
-Remember: You're evaluating both technical competency and communication skills. Be encouraging but maintain professional assessment standards.`,
+Style: Professional, warm, concise (30-50 words per response max).`,
         },
       ],
     },
-    firstMessage: `Hello! I'm your AI interviewer for this ${config.interviewType} interview session. I'll be asking you questions about the ${config.jobRole} position${config.company ? ` at ${config.company}` : ''}.
-
-Take your time with your answers. Let's begin with our first question:
-
-${config.currentQuestion}`,
+    firstMessage: `Hello! Welcome to your ${config.interviewType} interview for the ${config.jobRole} position${config.company ? ` at ${config.company}` : ''}. I'll be asking you ${totalQuestions} question${totalQuestions > 1 ? 's' : ''} today. Take your time with each answer.\n\nLet's begin with Question 1 of ${totalQuestions}:\n\n${firstQuestion}`,
     recordingEnabled: true,
-    endCallMessage: 'Thank you for your time. Best of luck with your interview!',
-    maxDurationSeconds: 600,
+    endCallMessage: 'Thank you for your time. Best of luck!',
+    maxDurationSeconds: 1800,
     silenceTimeoutSeconds: 30,
   } as const;
 };
 
 export const startInterviewCall = async (config: InterviewAssistantConfig) => {
   const vapi = getVapiClient();
-  if (!vapi) {
-    throw new Error('Vapi client not initialized');
-  }
+  if (!vapi) throw new Error('Vapi client not initialized');
 
   const assistant = createInterviewAssistant(config);
 
   try {
-    // Use type assertion to bypass strict typing
     await vapi.start(assistant as any);
     return vapi;
   } catch (error) {
@@ -106,9 +108,7 @@ export const startInterviewCall = async (config: InterviewAssistantConfig) => {
 
 export const stopInterviewCall = async () => {
   const vapi = getVapiClient();
-  if (!vapi) {
-    throw new Error('Vapi client not initialized');
-  }
+  if (!vapi) throw new Error('Vapi client not initialized');
 
   try {
     await vapi.stop();
