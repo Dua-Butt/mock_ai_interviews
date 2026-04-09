@@ -162,3 +162,41 @@ function getSkillStage(score: number | null) {
   };
 }
 
+
+
+AI-Powered Interview Platform Flow
+----------------------------------
+
+[User Opens App]
+       │
+       ▼
+[Select Interview Type, Job Role, Difficulty]
+       │
+       ▼
+[Click Start Interview]
+       │
+       ▼
+[VAPI(Anthropic API) → Generates Questions]
+       │
+       ▼
+[User Answers → Stored in conversation[] array]
+       │
+       ▼
+[buildPrompt() → Formats conversation + scoring rules]
+       │
+       ▼
+[Groq API → Evaluates Answers]
+       │
+       ▼
+[JSON Result → overallScore, category feedback, strengths, improvements, hiring recommendation]
+       │
+       ▼
+[Frontend → Displays Results to User]
+       │
+       ▼
+[Optional → Save Data to Supabase DB]
+
+Legend:
+- Anthropics API = Question Generation
+- Groq API = Answer Evaluation & Scoring
+- conversation[] = Temporary storage of questions + answers in browser
